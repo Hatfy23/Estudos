@@ -1,0 +1,1616 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Registro de Estudos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --ink:#3B2A18;
+    --ink-soft:#7A6647;
+    --text:#2E2213;
+    --paper:#EDE3C8;
+    --paper-card:#FBF6E8;
+    --paper-card-alt:#F3EACE;
+    --rule:#DCCB9F;
+    --rule-strong:#C3AC79;
+    --amber:#A8681F;
+    --amber-deep:#7E4E17;
+    --sage:#5F7A4E;
+    --sage-deep:#44592E;
+    --brick:#9C4A3E;
+    --brick-deep:#7A362C;
+    --shadow: 0 1px 2px rgba(59,42,24,0.06), 0 6px 16px rgba(59,42,24,0.10);
+    --shadow-lift: 0 4px 10px rgba(59,42,24,0.10), 0 16px 32px rgba(59,42,24,0.16);
+    --radius: 2px;
+    --radius-lg: 4px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background-color:var(--paper);
+    color:var(--text);
+    font-family:'EB Garamond', serif;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  body::before{
+    content:"";
+    position:fixed; inset:0;
+    background-image:
+      repeating-linear-gradient(180deg, rgba(59,42,24,0.025) 0px, rgba(59,42,24,0.025) 1px, transparent 1px, transparent 34px);
+    pointer-events:none;
+    z-index:0;
+  }
+  .app{position:relative; z-index:1; max-width:1320px; margin:0 auto; padding:28px 24px 80px;}
+
+  header.top{
+    display:flex; align-items:flex-end; justify-content:space-between;
+    gap:20px; flex-wrap:wrap;
+    padding-bottom:18px; margin-bottom:22px;
+    border-bottom:2px solid var(--ink);
+  }
+  .brand .stamp{
+    font-family:'EB Garamond', serif; font-weight:600;
+    font-size:11px; letter-spacing:.14em; text-transform:uppercase;
+    color:#F6EAD8; background:var(--brick);
+    padding:3px 9px; border-radius:2px; transform:rotate(-2deg);
+    display:inline-block;
+  }
+  h1{ font-family:'Cinzel', serif; font-weight:600; font-size:34px; margin:0; letter-spacing:.01em; color:var(--ink); }
+  .subtitle{font-size:13px; color:var(--ink-soft); margin-top:4px; font-family:'EB Garamond',serif; font-style:italic; letter-spacing:.02em;}
+
+  nav.tabs{display:flex; gap:6px;}
+  nav.tabs button{
+    font-family:'EB Garamond', serif; font-weight:600; font-size:13px; letter-spacing:.08em;
+    text-transform:uppercase; padding:9px 16px; border:1px solid var(--ink);
+    background:var(--paper-card); color:var(--ink); cursor:pointer;
+    border-radius:2px 2px 0 0; position:relative; top:1px;
+  }
+  nav.tabs button.active{background:var(--ink); color:var(--paper-card); font-weight:700;}
+  nav.tabs button:hover:not(.active){background:#E4D6B0;}
+
+  .btn{
+    font-family:'EB Garamond',serif; font-weight:700; font-size:14.5px; letter-spacing:.03em;
+    padding:9px 16px; border-radius:var(--radius); border:1.5px solid var(--ink);
+    background:var(--ink); color:var(--paper-card); cursor:pointer;
+    transition:transform .08s ease;
+  }
+  .btn:hover{transform:translateY(-1px);}
+  .btn.secondary{background:transparent; color:var(--ink);}
+  .btn.amber{background:var(--amber); border-color:var(--amber-deep); color:#FBF6E8;}
+  .btn.sm{padding:5px 10px; font-size:13px;}
+  .btn.danger{background:transparent; color:var(--brick-deep); border-color:var(--brick);}
+  .btn.icon{padding:6px 9px; line-height:1;}
+
+  .materias-view{display:grid; grid-template-columns:270px 1fr; gap:20px; align-items:start;}
+  @media (max-width:860px){ .materias-view{grid-template-columns:1fr;} }
+
+  .subject-rail{display:flex; flex-direction:column; gap:8px;}
+  .subject-tab{
+    display:flex; align-items:center; gap:10px;
+    background:var(--paper-card); border:1px solid var(--rule);
+    border-left:6px solid var(--tab-color, var(--sage));
+    padding:11px 12px; border-radius:0 var(--radius) var(--radius) 0;
+    cursor:pointer; box-shadow:var(--shadow);
+  }
+  .subject-tab.active{ background:var(--ink); color:var(--paper-card); border-color:var(--ink); }
+  .subject-tab .name{font-weight:600; font-size:14.5px; flex:1; color:var(--text);}
+  .subject-tab.active .name{color:var(--paper-card);}
+  .subject-tab .tipo-tag{font-size:10.5px; font-family:'EB Garamond',serif; letter-spacing:.08em; color:var(--ink-soft); text-transform:uppercase; display:block; margin-top:1px;}
+  .subject-tab.active .tipo-tag{color:#D9C79C;}
+  .subject-tab .badge{
+    font-family:'EB Garamond',serif; font-weight:600; font-size:10.5px; letter-spacing:.05em; text-transform:uppercase;
+    padding:2px 7px; border-radius:2px; background:#E3EAD9; border:1px solid var(--sage); color:var(--sage-deep);
+  }
+  .subject-tab.active .badge{background:transparent; border-color:var(--amber); color:#E2B87C;}
+  .subject-tab .badge.done{background:#DCE6D0; border-color:var(--sage-deep); color:var(--sage-deep);}
+
+  .empty-hint{
+    font-size:14px; color:var(--ink-soft); padding:14px; border:1px dashed var(--rule-strong);
+    border-radius:var(--radius); text-align:center; background:var(--paper-card); font-style:italic;
+  }
+
+  .subject-panel{background:var(--paper-card); border:1px solid var(--rule); border-radius:var(--radius-lg); box-shadow:var(--shadow); overflow:hidden;}
+  .subject-head{padding:20px 22px; border-bottom:1px solid var(--rule); position:relative;}
+  .subject-head .stripe{position:absolute; left:0; top:0; bottom:0; width:6px; background:var(--tab-color, var(--sage));}
+  .subject-head h2{font-family:'Cinzel',serif; font-size:23px; margin:0 0 2px 40px; font-weight:600; display:inline-block; color:var(--ink);}
+  .tipo-badge{margin-left:12px; font-family:'EB Garamond',serif; font-weight:600; font-size:11.5px; letter-spacing:.06em; text-transform:uppercase; background:var(--paper-card-alt); color:var(--ink-soft); padding:3px 9px; border-radius:10px; border:1px solid var(--rule-strong); vertical-align:middle;}
+  .subject-meta{display:flex; flex-wrap:wrap; gap:8px 18px; margin:10px 0 0 40px; font-size:13.5px; color:var(--ink-soft);}
+  .subject-meta span b{color:var(--text); font-weight:600;}
+  .subject-meta a{color:var(--amber-deep); text-decoration:none; border-bottom:1px dotted var(--amber-deep);}
+  .subject-actions{display:flex; gap:8px; margin:14px 0 0 40px; flex-wrap:wrap; align-items:center;}
+  .status-pill{
+    font-family:'EB Garamond',serif; font-weight:600; font-size:11.5px; letter-spacing:.06em; text-transform:uppercase;
+    padding:3px 10px; border-radius:3px;
+  }
+  .status-pill.andamento{background:#F3E4C8; color:var(--amber-deep); border:1px solid var(--amber);}
+  .status-pill.concluida{background:#E3EAD9; color:var(--sage-deep); border:1px solid var(--sage);}
+  .status-pill.pendente{background:var(--paper-card-alt); color:var(--ink-soft); border:1px solid var(--rule-strong);}
+
+  .exams-strip{margin:14px 0 0 40px; display:flex; flex-wrap:wrap; gap:6px;}
+  .exam-tag{font-size:11.5px; font-family:'EB Garamond',serif; font-weight:600; letter-spacing:.02em; background:#F3DEDA; color:var(--brick-deep); border:1px solid var(--brick); padding:3px 9px; border-radius:2px;}
+  .exam-tag.done{background:#E3EAD9; color:var(--sage-deep); border-color:var(--sage); text-decoration:line-through;}
+
+  .lessons-toolbar{display:flex; justify-content:space-between; align-items:center; padding:14px 22px; border-bottom:1px solid var(--rule); background:var(--paper-card-alt);}
+  .lessons-toolbar .count{font-family:'EB Garamond',serif; font-style:italic; font-size:13px; color:var(--ink-soft);}
+  .lessons-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:14px; padding:20px 22px;}
+
+  .index-card{
+    background:var(--paper-card); border:1px solid var(--rule-strong);
+    border-radius:2px; padding:14px 14px 12px; position:relative; box-shadow:var(--shadow);
+    cursor:pointer; transition:transform .1s ease, box-shadow .1s ease;
+  }
+  .index-card:hover{transform:translateY(-2px); box-shadow:var(--shadow-lift); border-color:var(--ink);}
+  .index-card::before{
+    content:""; position:absolute; top:-1px; right:14px; width:26px; height:8px;
+    background:var(--tab-color, var(--sage)); border-radius:0 0 3px 3px;
+  }
+  .index-card .edit-pencil{position:absolute; top:10px; right:10px; background:none; border:none; cursor:pointer; font-size:13px; color:var(--ink-soft); padding:2px;}
+  .index-card .top-row{display:flex; align-items:center; gap:7px;}
+  .index-card .lesson-title{font-family:'Cinzel',serif; font-weight:600; font-size:15.5px; margin:6px 0 4px; padding-right:16px; color:var(--ink);}
+  .index-card .lesson-date{font-family:'EB Garamond',serif; font-style:italic; font-size:12px; color:var(--ink-soft);}
+  .index-card .lesson-instructor{font-size:13px; color:var(--ink-soft); margin-top:4px;}
+  .index-card .chips{display:flex; gap:5px; flex-wrap:wrap; margin-top:9px;}
+  .chip{font-size:11px; font-family:'EB Garamond',serif; font-weight:600; letter-spacing:.04em; text-transform:uppercase; padding:2px 8px; border-radius:2px; border:1px solid var(--rule-strong); color:var(--ink-soft); background:var(--paper-card-alt);}
+  .chip.done{background:#E3EAD9; color:var(--sage-deep); border-color:var(--sage);}
+  .chip.task{background:#F3E4C8; color:var(--amber-deep); border-color:var(--amber);}
+  .chip.exam{background:#F3DEDA; color:var(--brick-deep); border-color:var(--brick);}
+
+  .subrows{padding:10px 22px 4px; display:flex; flex-direction:column; gap:8px;}
+  .subrows .empty-hint{margin:0 0 6px;}
+
+  .resumo-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(270px,1fr)); gap:16px;}
+  .resumo-card{
+    background:var(--paper-card); border:1px solid var(--rule); border-left:6px solid var(--tab-color,var(--sage));
+    border-radius:var(--radius-lg); padding:14px; box-shadow:var(--shadow); cursor:pointer;
+    transition:transform .1s ease, box-shadow .1s ease;
+  }
+  .resumo-card:hover{transform:translateY(-2px); box-shadow:var(--shadow-lift); border-color:var(--ink);}
+  .resumo-card.urgent{border-left-color:var(--brick);}
+  .resumo-card.soon{border-left-color:var(--amber);}
+  .resumo-card-head{display:flex; align-items:center; gap:10px;}
+  .resumo-dot{width:14px; height:14px; border-radius:50%; flex:none;}
+  .resumo-name{font-family:'Cinzel',serif; font-weight:600; font-size:15.5px; color:var(--ink); line-height:1.25;}
+  .resumo-tipo{font-size:11px; font-family:'EB Garamond',serif; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-soft); margin-top:1px;}
+  .resumo-body{margin-top:10px; display:flex; flex-direction:column; gap:5px;}
+  .resumo-row{display:flex; justify-content:space-between; gap:8px; font-size:13px;}
+  .resumo-label{color:var(--ink-soft); font-family:'EB Garamond',serif; font-style:italic; white-space:nowrap;}
+  .resumo-value{color:var(--text); font-weight:600; text-align:right;}
+  .resumo-value.urgent{color:var(--brick-deep);}
+  .resumo-value.soon{color:var(--amber-deep);}
+  .resumo-counts{display:flex; gap:6px; flex-wrap:wrap; margin-top:10px;}
+
+  .overlay{position:fixed; inset:0; background:rgba(46,34,19,0.45); display:none; align-items:flex-start; justify-content:center; padding:40px 16px; overflow-y:auto; z-index:50;}
+  .overlay.show{display:flex;}
+  .modal{background:var(--paper-card); width:100%; max-width:640px; border-radius:var(--radius-lg); box-shadow:var(--shadow-lift); border:1px solid var(--rule-strong); margin-bottom:40px;}
+  .modal-head{display:flex; justify-content:space-between; align-items:center; padding:18px 22px; border-bottom:1px solid var(--rule);}
+  .modal-head h3{font-family:'Cinzel',serif; font-size:19px; margin:0; font-weight:600; color:var(--ink);}
+  .modal-close{background:none; border:none; font-size:20px; cursor:pointer; color:var(--ink-soft); line-height:1;}
+  .modal-body{padding:20px 22px; display:flex; flex-direction:column; gap:14px;}
+  .modal-foot{padding:16px 22px; border-top:1px solid var(--rule); display:flex; justify-content:space-between; gap:10px;}
+
+  .field{display:flex; flex-direction:column; gap:5px;}
+  .field label{font-size:12px; text-transform:uppercase; letter-spacing:.07em; font-family:'EB Garamond',serif; font-weight:600; color:var(--ink-soft);}
+  .field input, .field textarea, .field select{
+    font-family:'EB Garamond',serif; font-size:15px; padding:9px 10px; border:1px solid var(--rule-strong);
+    border-radius:var(--radius); background:#FFFCF4; color:var(--text);
+  }
+  .field textarea{resize:vertical; min-height:64px;}
+  .field input:focus, .field textarea:focus, .field select:focus{outline:2px solid var(--amber); outline-offset:0;}
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  .row3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;}
+  .row-color{display:flex; gap:8px; flex-wrap:wrap;}
+  .swatch{width:26px; height:26px; border-radius:50%; cursor:pointer; border:2px solid transparent;}
+  .swatch.selected{border-color:var(--ink);}
+  .checkline{display:flex; align-items:center; gap:8px; font-size:14.5px; color:var(--text);}
+
+  .recur-box{border:1px dashed var(--rule-strong); border-radius:var(--radius); padding:12px; display:flex; flex-direction:column; gap:10px; background:var(--paper-card-alt);}
+  .recur-fields{display:none; gap:12px; grid-template-columns:1fr 1fr;}
+  .recur-fields.show{display:grid;}
+
+  .sublist{border:1px solid var(--rule); border-radius:var(--radius); overflow:hidden;}
+  .sublist-title{font-family:'EB Garamond',serif; font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:.07em; background:var(--paper-card-alt); padding:8px 10px; display:flex; justify-content:space-between; align-items:center; color:var(--ink-soft);}
+  .sublist-items{display:flex; flex-direction:column;}
+  .sublist-item{display:flex; align-items:center; gap:8px; padding:8px 10px; border-top:1px solid var(--rule); font-size:13.5px;}
+  .sublist-item input[type=text], .sublist-item input[type=date], .sublist-item input[type=url]{flex:1; padding:6px 8px; font-size:13px; border:1px solid var(--rule-strong); border-radius:2px; background:#FFFCF4; color:var(--text);}
+  .sublist-item select{padding:6px; font-size:12.5px; border:1px solid var(--rule-strong); border-radius:2px; background:#FFFCF4; color:var(--text);}
+  .sublist-empty{padding:10px; font-size:13px; color:var(--ink-soft); font-style:italic;}
+
+  /* view (read-only) modal */
+  .view-block{display:flex; flex-direction:column; gap:3px;}
+  .view-block .vlabel{font-size:11.5px; text-transform:uppercase; letter-spacing:.06em; font-family:'EB Garamond',serif; font-weight:600; color:var(--ink-soft);}
+  .view-block .vvalue{font-size:15px; color:var(--text);}
+  .view-block .vvalue a{color:var(--amber-deep); word-break:break-all;}
+  .view-grid{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+  .view-list-item{border:1px solid var(--rule); border-left:4px solid var(--rule-strong); border-radius:2px; padding:7px 10px; font-size:13.5px; display:flex; justify-content:space-between; align-items:center; gap:8px; background:var(--paper-card-alt);}
+  .view-list-item a{color:var(--amber-deep);}
+
+  .tarefas-toolbar{margin-bottom:14px;}
+  .tarefas-filters{display:flex; gap:6px;}
+  .chipfilter{font-family:'EB Garamond',serif; font-weight:600; font-size:13px; letter-spacing:.06em; text-transform:uppercase; padding:7px 14px; border:1px solid var(--ink); background:var(--paper-card); color:var(--ink); border-radius:3px; cursor:pointer;}
+  .chipfilter.active{background:var(--ink); color:var(--paper-card);}
+  .task-group{margin-bottom:22px;}
+  .task-group h4{font-family:'Cinzel',serif; font-size:13px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-soft); border-bottom:1px solid var(--rule); padding-bottom:6px; margin:0 0 10px; font-weight:600;}
+  .task-row{display:flex; align-items:center; gap:12px; background:var(--paper-card); border:1px solid var(--rule); border-left:5px solid var(--kcolor,var(--sage)); border-radius:2px; padding:10px 12px; margin-bottom:8px; cursor:pointer;}
+  .task-row.overdue{border-left-color:var(--brick);}
+  .task-row.done{opacity:.6;}
+  .task-row .ttitle{font-weight:600; font-size:14.5px; color:var(--text);}
+  .task-row .tsub{font-size:12.5px; color:var(--ink-soft);}
+  .task-row .tdate{font-family:'EB Garamond',serif; font-style:italic; font-size:13px; color:var(--ink-soft); white-space:nowrap;}
+  .task-row .tdate.overdue{color:var(--brick-deep); font-weight:600; font-style:normal;}
+  .task-row .ttype{font-size:10.5px; font-family:'EB Garamond',serif; font-weight:600; letter-spacing:.05em; text-transform:uppercase; padding:2px 8px; border-radius:2px; border:1px solid var(--rule-strong); color:var(--ink-soft); white-space:nowrap;}
+
+  .kanban{display:grid; grid-template-columns:repeat(3,1fr); gap:16px;}
+  @media (max-width:800px){ .kanban{grid-template-columns:1fr;} }
+  .kcol{background:var(--paper-card); border:1px solid var(--rule); border-radius:var(--radius-lg); min-height:200px; box-shadow:var(--shadow);}
+  .kcol-head{padding:12px 14px; border-bottom:2px solid var(--ink); display:flex; justify-content:space-between; align-items:center;}
+  .kcol-head h4{margin:0; font-family:'Cinzel',serif; font-size:14.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink);}
+  .kcol-head .n{font-family:'EB Garamond',serif; font-style:italic; font-size:12px; color:var(--ink-soft);}
+  .kcol-body{padding:12px; display:flex; flex-direction:column; gap:10px; min-height:120px;}
+  .kcol.dragover{background:#E9DDBB;}
+  .kcard{
+    background:#FFFCF4; border:1px solid var(--rule-strong); border-left:5px solid var(--kcolor, var(--sage));
+    border-radius:2px; padding:10px 11px; cursor:grab; box-shadow:var(--shadow);
+  }
+  .kcard:active{cursor:grabbing;}
+  .kcard .ktype{font-family:'EB Garamond',serif; font-weight:600; font-size:10.5px; text-transform:uppercase; color:var(--ink-soft); letter-spacing:.06em;}
+  .kcard .ktitle{font-weight:600; font-size:14px; margin:3px 0 2px; color:var(--text);}
+  .kcard .kmeta{font-size:12px; color:var(--ink-soft);}
+
+  .cal-toolbar{display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; flex-wrap:wrap; gap:10px;}
+  .cal-toolbar .month-label{font-family:'Cinzel',serif; font-size:20px; font-weight:600; color:var(--ink); text-transform:capitalize;}
+  .cal-nav{display:flex; gap:6px; align-items:center;}
+  .cal-modes{display:flex; gap:0; border:1px solid var(--ink); border-radius:2px; overflow:hidden;}
+  .cal-modes button{font-family:'EB Garamond',serif; font-weight:600; font-size:12px; letter-spacing:.05em; text-transform:uppercase; padding:7px 12px; border:none; background:var(--paper-card); cursor:pointer; color:var(--ink);}
+  .cal-modes button.active{background:var(--ink); color:var(--paper-card);}
+  .cal-modes button:not(:last-child){border-right:1px solid var(--ink);}
+
+  .cal-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:6px;}
+  .cal-dow{font-family:'EB Garamond',serif; font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); text-align:center; padding-bottom:4px;}
+  .cal-day{
+    background:var(--paper-card); border:1px solid var(--rule); border-radius:var(--radius);
+    min-height:92px; padding:6px; cursor:pointer; display:flex; flex-direction:column; gap:4px;
+  }
+  .cal-day.othermonth{opacity:.45;}
+  .cal-day.today{border:2px solid var(--amber);}
+  .cal-day:hover{box-shadow:var(--shadow-lift); border-color:var(--ink);}
+  .cal-daynum{font-family:'EB Garamond',serif; font-style:italic; font-size:12.5px; color:var(--ink-soft);}
+  .cal-dot-row{display:flex; flex-wrap:wrap; gap:3px;}
+  .cal-dot{width:8px; height:8px; border-radius:50%; background:var(--sage);}
+  .cal-dot.exam{background:var(--brick);}
+  .cal-dot.task{background:var(--amber);}
+  .cal-event-line{font-size:10.5px; background:var(--paper-card-alt); color:var(--ink-soft); border-radius:2px; padding:1px 4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+
+  /* week view */
+  .week-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:8px;}
+  .week-day{background:var(--paper-card); border:1px solid var(--rule); border-radius:var(--radius); min-height:220px; padding:8px; display:flex; flex-direction:column; gap:6px;}
+  .week-day.today{border:2px solid var(--amber);}
+  .week-day-head{font-family:'EB Garamond',serif; font-weight:600; font-size:12px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.04em; border-bottom:1px solid var(--rule); padding-bottom:5px;}
+  .week-event{border-left:4px solid var(--kcolor,var(--sage)); background:var(--paper-card-alt); color:var(--text); border-radius:2px; padding:5px 7px; font-size:12px; cursor:pointer;}
+  .week-event .wtime{font-family:'EB Garamond',serif; font-style:italic; font-size:11px; color:var(--ink-soft);}
+
+  /* semester view */
+  .semester-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:16px;}
+  @media (max-width:900px){ .semester-grid{grid-template-columns:1fr 1fr;} }
+  .mini-month{background:var(--paper-card); border:1px solid var(--rule); border-radius:var(--radius); padding:10px; cursor:pointer;}
+  .mini-month:hover{box-shadow:var(--shadow-lift); border-color:var(--ink);}
+  .mini-month h5{margin:0 0 6px; font-family:'Cinzel',serif; font-size:14px; text-align:center; text-transform:capitalize; color:var(--ink); font-weight:600;}
+  .mini-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:2px;}
+  .mini-cell{aspect-ratio:1; border-radius:1px; background:var(--paper-card-alt); position:relative;}
+  .mini-cell.has-aula{background:var(--sage); opacity:.55;}
+  .mini-cell.has-exam{background:var(--brick); opacity:.7;}
+  .mini-cell.has-task{background:var(--amber); opacity:.7;}
+  .mini-cell.other{background:transparent;}
+  .mini-summary{margin-top:8px; font-size:11.5px; color:var(--ink-soft); font-family:'EB Garamond',serif; font-style:italic; text-align:center;}
+
+  .day-modal-list{display:flex; flex-direction:column; gap:8px;}
+  .day-event{border:1px solid var(--rule); border-left:5px solid var(--kcolor,var(--sage)); border-radius:2px; padding:8px 10px; background:#FFFCF4; cursor:pointer;}
+  .day-event .etype{font-family:'EB Garamond',serif; font-weight:600; font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft);}
+  .day-event .etitle{font-weight:600; font-size:14px; color:var(--text);}
+  .day-event .esub{font-size:12.5px; color:var(--ink-soft);}
+
+  /* sync indicator */
+  .sync-badge{
+    display:inline-flex; align-items:center; gap:6px;
+    font-family:'EB Garamond',serif; font-size:12px; font-style:italic;
+    color:var(--ink-soft); margin-top:6px;
+  }
+  .sync-dot{width:8px; height:8px; border-radius:50%; background:var(--rule-strong); flex:none;}
+  .sync-dot.ok{background:var(--sage);}
+  .sync-dot.saving{background:var(--amber); animation:pulse 1s ease-in-out infinite;}
+  .sync-dot.err{background:var(--brick);}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+  /* link previews */
+  .thumbs{display:flex; flex-wrap:wrap; gap:10px; margin-top:4px;}
+  .thumb{
+    width:112px; border:1px solid var(--rule-strong); border-radius:2px; overflow:hidden;
+    background:var(--paper-card-alt); cursor:pointer; box-shadow:var(--shadow); text-align:center;
+  }
+  .thumb:hover{border-color:var(--ink); box-shadow:var(--shadow-lift);}
+  .thumb .timg{width:100%; height:76px; object-fit:cover; display:block; background:var(--paper-card-alt);}
+  .thumb .tfallback{
+    width:100%; height:76px; display:flex; align-items:center; justify-content:center;
+    font-size:26px; color:var(--ink-soft); background:var(--paper-card-alt);
+  }
+  .thumb .tcap{
+    font-size:11px; padding:4px 5px; color:var(--text); line-height:1.25;
+    border-top:1px solid var(--rule); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .thumb-inline{display:inline-flex; align-items:center; gap:5px; vertical-align:middle;}
+  .thumb-inline img{width:22px; height:22px; object-fit:cover; border:1px solid var(--rule-strong); border-radius:2px;}
+
+  .preview-modal{max-width:900px;}
+  .preview-frame{width:100%; height:70vh; border:1px solid var(--rule-strong); border-radius:2px; background:var(--paper-card-alt);}
+  .preview-img{width:100%; max-height:70vh; object-fit:contain; border:1px solid var(--rule-strong); border-radius:2px; background:var(--paper-card-alt);}
+
+  .subj-avatar{width:30px; height:30px; object-fit:cover; border-radius:3px; border:1px solid var(--rule-strong); flex:none;}
+  .subj-hero{float:right; max-height:64px; max-width:110px; object-fit:contain; border:1px solid var(--rule-strong); border-radius:3px; background:var(--paper-card-alt); margin-left:14px;}
+  .status-pill.revisar{background:#EFE2C4; color:#7A5A16; border:1px solid #B38B2E;}
+  .chip.revisar{background:#EFE2C4; color:#7A5A16; border-color:#B38B2E;}
+  .stat-btn{
+    width:22px; height:22px; flex:none; cursor:pointer; border-radius:3px;
+    border:1.5px solid var(--rule-strong); background:#FFFCF4; color:var(--ink);
+    font-size:13px; line-height:1; display:flex; align-items:center; justify-content:center;
+    font-family:'EB Garamond',serif; padding:0;
+  }
+  .stat-btn.revisar{border-color:#B38B2E; background:#EFE2C4; color:#7A5A16;}
+  .stat-btn.concluida{border-color:var(--sage); background:#E3EAD9; color:var(--sage-deep); font-weight:700;}
+  .stat-btn:hover{border-color:var(--ink);}
+
+  footer.foot{text-align:center; margin-top:50px; font-family:'EB Garamond',serif; font-style:italic; font-size:12px; color:var(--ink-soft); letter-spacing:.02em;}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="top">
+    <div class="brand">
+      <div>
+        <div class="stamp">arquivo pessoal</div>
+        <h1>Registro de Estudos</h1>
+        <div class="subtitle">seu guia de matérias, aulas e prazos — os documentos oficiais ficam no drive, aqui fica o mapa</div>
+        <div class="sync-badge"><span class="sync-dot" id="syncDot"></span><span id="syncText">conectando…</span></div>
+      </div>
+    </div>
+    <nav class="tabs" id="viewTabs">
+      <button data-view="materias" class="active">Matérias</button>
+      <button data-view="resumo">Resumo</button>
+      <button data-view="kanban">Kanban</button>
+      <button data-view="calendario">Calendário</button>
+    </nav>
+  </header>
+
+  <section id="view-materias" class="view">
+    <div class="materias-view">
+      <div>
+        <div style="margin-bottom:10px;">
+          <button class="btn amber" style="width:100%;" onclick="openMateriaModal()">+ Nova matéria</button>
+        </div>
+        <div id="subjectRail" class="subject-rail"></div>
+      </div>
+      <div id="subjectDetailWrap"></div>
+    </div>
+  </section>
+
+  <section id="view-resumo" class="view" style="display:none;">
+    <div id="resumoGrid" class="resumo-grid"></div>
+  </section>
+
+  <section id="view-kanban" class="view" style="display:none;">
+    <div class="tarefas-toolbar">
+      <div class="tarefas-filters" id="kanbanFilters">
+        <button class="chipfilter active" data-kf="todas" onclick="setKanbanFilter('todas')">Todos</button>
+        <button class="chipfilter" data-kf="aula" onclick="setKanbanFilter('aula')">Aulas</button>
+        <button class="chipfilter" data-kf="atividade" onclick="setKanbanFilter('atividade')">Atividades</button>
+        <button class="chipfilter" data-kf="prova" onclick="setKanbanFilter('prova')">Provas</button>
+      </div>
+    </div>
+    <div class="kanban" id="kanbanBoard"></div>
+  </section>
+
+  <section id="view-calendario" class="view" style="display:none;">
+    <div class="cal-toolbar">
+      <div class="cal-nav">
+        <button class="btn secondary sm" onclick="calShift(-1)">← anterior</button>
+        <button class="btn secondary sm" onclick="calToday()">hoje</button>
+        <button class="btn secondary sm" onclick="calShift(1)">próximo →</button>
+      </div>
+      <div class="month-label" id="calMonthLabel"></div>
+      <div class="cal-modes">
+        <button data-mode="semana" onclick="setCalMode('semana')">Semana</button>
+        <button data-mode="mes" class="active" onclick="setCalMode('mes')">Mês</button>
+        <button data-mode="semestre" onclick="setCalMode('semestre')">Semestre</button>
+      </div>
+    </div>
+    <div id="calBody"></div>
+  </section>
+
+  <footer class="foot">sincronizado na nuvem (Supabase) com cópia local de segurança · registro-de-estudos v3</footer>
+</div>
+
+<!-- MODAL: MATERIA -->
+<div class="overlay" id="materiaOverlay">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="materiaModalTitle">Nova matéria</h3>
+      <button class="modal-close" onclick="closeModal('materiaOverlay')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="row2">
+        <div class="field"><label>Nome da matéria</label><input type="text" id="mNome" placeholder="Ex: Estatística Aplicada"></div>
+        <div class="field">
+          <label>Tipo</label>
+          <input type="text" id="mTipo" list="tipoOptions" placeholder="Ex: faculdade, idiomas...">
+          <datalist id="tipoOptions">
+            <option value="Faculdade"></option>
+            <option value="Idiomas"></option>
+            <option value="Curso livre"></option>
+            <option value="Certificação"></option>
+            <option value="Workshop"></option>
+          </datalist>
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>Instrutor / professor</label><input type="text" id="mInstrutor" placeholder="Nome"></div>
+        <div class="field"><label>Contato do professor</label><input type="text" id="mContato" placeholder="E-mail, telefone..."></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>Link do plano de ensino</label><input type="url" id="mPlano" placeholder="https://drive.google.com/..."></div>
+        <div class="field"><label>Link do curso</label><input type="url" id="mCurso" placeholder="https://..."></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>Link do certificado</label><input type="url" id="mCertificado" placeholder="https://drive.google.com/..."></div>
+        <div class="field"><label>Foto da matéria (link da imagem)</label><input type="url" id="mFoto" placeholder="https://... bandeira, ícone, etc." oninput="updateFotoPreview()"></div>
+      </div>
+      <div id="mFotoPreviewWrap" style="display:none;"><img id="mFotoPreview" alt="" style="max-height:80px; border:1px solid var(--rule-strong); border-radius:2px;"></div>
+      <div class="field"><label>Observações gerais</label><textarea id="mObs" placeholder="Anotações livres sobre a matéria"></textarea></div>
+      <div class="field">
+        <label>Cor de identificação</label>
+        <div class="row-color" id="mColorRow"></div>
+      </div>
+      <div class="row2">
+        <div class="checkline" style="align-items:center;"><input type="checkbox" id="mConcluida" onchange="toggleConclusaoField()"> <label for="mConcluida">Matéria concluída</label></div>
+        <div class="field" id="mDataConclusaoWrap" style="display:none;"><label>Data de conclusão</label><input type="date" id="mDataConclusao"></div>
+      </div>
+
+      <div class="sublist" id="provasSublist">
+        <div class="sublist-title"><span>Datas de prova da disciplina</span><button class="btn icon sm" onclick="addProvaItem()">+</button></div>
+        <div class="sublist-items" id="provasItems"></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn danger" id="mDeleteBtn" style="display:none;" onclick="deleteMateria()">Excluir matéria</button>
+      <div style="display:flex; gap:8px; margin-left:auto;">
+        <button class="btn secondary" onclick="closeModal('materiaOverlay')">Cancelar</button>
+        <button class="btn amber" onclick="saveMateria()">Salvar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: AULA (view / read-only) -->
+<div class="overlay" id="aulaViewOverlay">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="aulaViewTitle">Aula</h3>
+      <button class="modal-close" onclick="closeModal('aulaViewOverlay')">✕</button>
+    </div>
+    <div class="modal-body" id="aulaViewBody"></div>
+    <div class="modal-foot">
+      <button class="btn secondary" onclick="closeModal('aulaViewOverlay')">Fechar</button>
+      <button class="btn amber" onclick="switchToAulaEdit()">Editar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: AULA (edit) -->
+<div class="overlay" id="aulaOverlay">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="aulaModalTitle">Nova aula</h3>
+      <button class="modal-close" onclick="closeModal('aulaOverlay')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field"><label>Título da aula</label><input type="text" id="aTitulo" placeholder="Ex: Aula 3 — Distribuições de probabilidade"></div>
+      <div class="row2">
+        <div class="field"><label>Dia / hora</label><input type="datetime-local" id="aDiaHora"></div>
+        <div class="field"><label>Instrutor (se diferente da matéria)</label><input type="text" id="aInstrutor"></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>Endereço / local</label><input type="text" id="aEndereco" placeholder="Sala, plataforma..."></div>
+        <div class="field"><label>Link da aula</label><input type="url" id="aLink" placeholder="https://..."></div>
+      </div>
+      <div class="field"><label>Conteúdo</label><textarea id="aConteudo" placeholder="O que foi/será abordado"></textarea></div>
+      <div class="field"><label>Observações</label><textarea id="aObs"></textarea></div>
+      <div class="field">
+        <label>Status</label>
+        <select id="aStatus">
+          <option value="pendente">Pendente</option>
+          <option value="revisar">Revisar</option>
+          <option value="concluido">Concluída</option>
+        </select>
+      </div>
+
+      <div class="recur-box" id="recurBox">
+        <div class="checkline"><input type="checkbox" id="aRecorrente" onchange="toggleRecurFields()"> <label for="aRecorrente">Aula recorrente (gera várias aulas de uma vez)</label></div>
+        <div class="recur-fields" id="recurFields">
+          <div class="field"><label>Frequência</label>
+            <select id="aFrequencia">
+              <option value="diaria">Diária (seg a sex)</option>
+              <option value="semanal">Semanal</option>
+              <option value="quinzenal">Quinzenal</option>
+              <option value="mensal">Mensal</option>
+            </select>
+          </div>
+          <div class="field"><label>Repetir até</label><input type="date" id="aRepetirAte"></div>
+        </div>
+      </div>
+
+      <div class="sublist" id="materiaisSublist">
+        <div class="sublist-title"><span>Materiais de estudo</span><button class="btn icon sm" onclick="addSubItem('materiais')">+</button></div>
+        <div class="sublist-items" id="materiaisItems"></div>
+      </div>
+      <div class="sublist" id="atividadesSublist">
+        <div class="sublist-title"><span>Atividades</span><button class="btn icon sm" onclick="addSubItem('atividades')">+</button></div>
+        <div class="sublist-items" id="atividadesItems"></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn danger" id="aDeleteBtn" style="display:none;" onclick="deleteAula()">Excluir aula</button>
+      <div style="display:flex; gap:8px; margin-left:auto;">
+        <button class="btn secondary" onclick="closeModal('aulaOverlay')">Cancelar</button>
+        <button class="btn amber" onclick="saveAula()">Salvar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: PREVIEW -->
+<div class="overlay" id="previewOverlay">
+  <div class="modal preview-modal">
+    <div class="modal-head">
+      <h3 id="previewTitle">Pré-visualização</h3>
+      <button class="modal-close" onclick="closeModal('previewOverlay')">✕</button>
+    </div>
+    <div class="modal-body" id="previewBody"></div>
+    <div class="modal-foot">
+      <button class="btn secondary" onclick="closeModal('previewOverlay')">Fechar</button>
+      <a class="btn amber" id="previewOpenBtn" href="#" target="_blank" rel="noopener" style="text-decoration:none;">Abrir no Drive</a>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: DAY DETAIL -->
+<div class="overlay" id="dayOverlay">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="dayModalTitle">Dia</h3>
+      <button class="modal-close" onclick="closeModal('dayOverlay')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="day-modal-list" id="dayEventList"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============ STATE ============ */
+const STORAGE_KEY = 'registroEstudosData_v2';
+const COLORS = ['#93413D','#7C9160','#C9A227','#4A6670','#7A4B3A','#6B5390','#5C7A6E'];
+
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+
+function loadData(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      const parsedRaw = JSON.parse(raw);
+      (parsedRaw.materias||[]).forEach(m => {
+        (m.provas||[]).forEach(p => { if(p.status==='revisada') p.status='concluido'; });
+        (m.aulas||[]).forEach(a => {
+          if(a.status==='revisada') a.status='concluido';
+          (a.atividades||[]).forEach(t => { if(t.status==='revisada') t.status='concluido'; });
+        });
+      });
+      return parsedRaw;
+    }
+    const old = localStorage.getItem('registroEstudosData_v1');
+    if(old){
+      const parsed = JSON.parse(old);
+      parsed.materias.forEach(m => {
+        m.provas = m.provas || [];
+        m.tipo = m.tipo || '';
+        (m.aulas||[]).forEach(a => {
+          if(a.status === 'andamento' || a.status === 'revisada') a.status = 'concluido';
+          if(a.provas && a.provas.length){ m.provas = m.provas.concat(a.provas); delete a.provas; }
+        });
+      });
+      return parsed;
+    }
+  }catch(e){ console.error('Erro ao carregar dados', e); }
+  return { materias: [] };
+}
+/* ============ SUPABASE SYNC ============ */
+const SUPABASE_URL = 'https://cfdzwduajsatbydphrtq.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNmZHp3ZHVhanNhdGJ5ZHBocnRxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4MzQ2MDIsImV4cCI6MjA5MzQxMDYwMn0.zUB9rASXCXxKVJFfvXrfcMCivQ3fPV4AE0Jvo4hCamQ';
+const SYNC_TABLE = 'registro_estudos_store';   // tabela isolada, não mexe nos outros apps
+const SYNC_ROW_ID = 'default';
+
+let sb = null;
+try{
+  if(window.supabase) sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+}catch(e){ console.error('Supabase indisponível', e); }
+
+let syncTimer = null;
+let pulling = false;
+
+function setSyncStatus(kind, text){
+  const dot = document.getElementById('syncDot');
+  const label = document.getElementById('syncText');
+  if(!dot || !label) return;
+  dot.className = 'sync-dot' + (kind ? ' '+kind : '');
+  label.textContent = text;
+}
+
+function saveData(){
+  state.updatedAt = new Date().toISOString();
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+  catch(e){ console.error('Erro ao salvar local', e); }
+  schedulePush();
+}
+
+function schedulePush(){
+  if(!sb) return;
+  setSyncStatus('saving','salvando…');
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(pushRemote, 1200);
+}
+
+async function pushRemote(){
+  if(!sb) return;
+  try{
+    setSyncStatus('saving','salvando…');
+    const { error } = await sb.from(SYNC_TABLE).upsert({
+      id: SYNC_ROW_ID,
+      data: state,
+      updated_at: state.updatedAt || new Date().toISOString()
+    }, { onConflict: 'id' });
+    if(error) throw error;
+    setSyncStatus('ok','sincronizado · '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}));
+  }catch(e){
+    console.error('Erro ao sincronizar', e);
+    setSyncStatus('err','offline — salvo só neste aparelho');
+  }
+}
+
+async function pullRemote(){
+  if(!sb || pulling) return;
+  pulling = true;
+  try{
+    setSyncStatus('saving','buscando na nuvem…');
+    const { data, error } = await sb.from(SYNC_TABLE).select('data, updated_at').eq('id', SYNC_ROW_ID).maybeSingle();
+    if(error) throw error;
+
+    if(!data){
+      // primeira vez: envia o que existe localmente
+      await pushRemote();
+      return;
+    }
+    const remoteAt = data.updated_at || data.data?.updatedAt || '';
+    const localAt = state.updatedAt || '';
+    if(remoteAt > localAt){
+      state = data.data || { materias: [] };
+      state.updatedAt = remoteAt;
+      if(!getMateria(selectedMateriaId)) selectedMateriaId = state.materias[0]?.id || null;
+      try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
+      refreshAll();
+      setSyncStatus('ok','atualizado da nuvem · '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}));
+    }else if(localAt > remoteAt){
+      await pushRemote();
+    }else{
+      setSyncStatus('ok','sincronizado');
+    }
+  }catch(e){
+    console.error('Erro ao buscar dados remotos', e);
+    setSyncStatus('err','offline — usando dados locais');
+  }finally{
+    pulling = false;
+  }
+}
+
+let state = loadData();
+let currentView = 'materias';
+let calMode = 'mes';
+let selectedMateriaId = state.materias[0]?.id || null;
+let editingMateriaId = null;
+let editingAulaId = null;
+let editingAulaMateriaId = null;
+let viewingAulaMateriaId = null;
+let viewingAulaId = null;
+let draftSub = { materiais: [], atividades: [] };
+let draftProvas = [];
+let calCursor = new Date(); calCursor.setHours(0,0,0,0);
+
+/* ============ UTIL ============ */
+function fmtDateTime(iso){
+  if(!iso) return '—';
+  const d = new Date(iso);
+  if(isNaN(d)) return iso;
+  return d.toLocaleDateString('pt-BR') + ' · ' + d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+}
+function fmtDate(iso){
+  if(!iso) return '—';
+  const d = new Date(iso + (iso.length<=10?'T00:00:00':''));
+  if(isNaN(d)) return iso;
+  return d.toLocaleDateString('pt-BR');
+}
+function esc(s){ return (s||'').toString().replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function asLink(url, text){
+  if(!url) return '—';
+  const safe = esc(url);
+  return `<a href="${safe}" target="_blank" rel="noopener">${esc(text||url)}</a>`;
+}
+/* ---- Google Drive: id, miniatura e pré-visualização ---- */
+function driveFileId(url){
+  if(!url) return null;
+  const u = url.toString();
+  let m = u.match(/\/d\/([a-zA-Z0-9_-]{15,})/);            // .../file/d/ID/... e docs/d/ID
+  if(m) return m[1];
+  m = u.match(/[?&]id=([a-zA-Z0-9_-]{15,})/);              // ...open?id=ID , uc?id=ID
+  if(m) return m[1];
+  return null;
+}
+function isDrive(url){ return /drive\.google\.com|docs\.google\.com/.test(url||'') && !!driveFileId(url); }
+function driveThumb(id, w){ return `https://drive.google.com/thumbnail?id=${id}&sz=w${w||320}`; }
+function drivePreview(id){ return `https://drive.google.com/file/d/${id}/preview`; }
+
+function thumbFallback(img){
+  const div = document.createElement('div');
+  div.className = 'tfallback';
+  div.textContent = '🔗';
+  img.replaceWith(div);
+}
+function thumbHtml(url, label){
+  if(!url) return '';
+  const id = driveFileId(url);
+  const cap = esc(label || (id ? 'arquivo do Drive' : url));
+  const onclick = `openPreview(${JSON.stringify(url).replace(/"/g,'&quot;')}, ${JSON.stringify(label||'').replace(/"/g,'&quot;')})`;
+  const media = id
+    ? `<img class="timg" src="${driveThumb(id,320)}" alt="" loading="lazy" onerror="thumbFallback(this)">`
+    : `<div class="tfallback">🔗</div>`;
+  return `<div class="thumb" onclick="${onclick}" title="${cap}">${media}<div class="tcap">${cap}</div></div>`;
+}
+function inlineThumbLink(url, text){
+  if(!url) return '—';
+  const id = driveFileId(url);
+  const safeCall = `openPreview(${JSON.stringify(url).replace(/"/g,'&quot;')}, ${JSON.stringify(text||'').replace(/"/g,'&quot;')})`;
+  const img = id ? `<img src="${driveThumb(id,80)}" alt="" loading="lazy" onerror="this.style.display='none'">` : '';
+  return `<span class="thumb-inline">${img}<a href="#" onclick="event.preventDefault(); ${safeCall}">${esc(text||'abrir')}</a></span>`;
+}
+function openPreview(url, label){
+  const id = driveFileId(url);
+  document.getElementById('previewTitle').textContent = label || 'Pré-visualização';
+  const btn = document.getElementById('previewOpenBtn');
+  btn.href = url;
+  btn.textContent = id ? 'Abrir no Drive' : 'Abrir link';
+  const body = document.getElementById('previewBody');
+  if(id){
+    body.innerHTML = `<iframe class="preview-frame" src="${esc(drivePreview(id))}" allow="autoplay"></iframe>
+      <div class="sublist-empty">Se aparecer em branco, confirme que o arquivo está compartilhado como “qualquer pessoa com o link”.</div>`;
+  }else{
+    body.innerHTML = `<div class="empty-hint">Não dá para pré-visualizar este link aqui.<br>${asLink(url,'abrir em nova aba')}</div>`;
+  }
+  openModal('previewOverlay');
+}
+
+function updateFotoPreview(){
+  const url = (document.getElementById('mFoto').value || '').trim();
+  const wrap = document.getElementById('mFotoPreviewWrap');
+  const img = document.getElementById('mFotoPreview');
+  if(!url){ wrap.style.display = 'none'; return; }
+  img.onerror = () => { wrap.style.display = 'none'; };
+  img.onload = () => { wrap.style.display = ''; };
+  img.src = imageSrc(url);
+}
+// imagens do Drive precisam do formato de thumbnail para "hotlinkar"
+function imageSrc(url){
+  const id = driveFileId(url);
+  return id ? driveThumb(id, 400) : url;
+}
+
+function getMateria(id){ return state.materias.find(m => m.id === id); }
+function getAula(materiaId, aulaId){ const m = getMateria(materiaId); return m?.aulas.find(a => a.id === aulaId); }
+const STATUS_ORDER = ['pendente','revisar','concluido'];
+function statusLabel(s){ return {pendente:'pendente', revisar:'revisar', concluido:'concluída'}[s] || s; }
+function statusClass(s){ return s==='concluido' ? 'concluida' : s==='revisar' ? 'revisar' : 'pendente'; }
+function nextStatus(s){
+  const i = STATUS_ORDER.indexOf(s === 'concluido' ? 'concluido' : (s || 'pendente'));
+  return STATUS_ORDER[(i < 0 ? 0 : i + 1) % STATUS_ORDER.length];
+}
+function statusMark(s){ return s==='concluido' ? '✓' : s==='revisar' ? '◐' : ''; }
+
+function refreshAll(){
+  if(currentView==='materias') renderMaterias();
+  if(currentView==='resumo') renderResumo();
+  if(currentView==='kanban') renderKanban();
+  if(currentView==='calendario') renderCalendar();
+}
+
+/* ============ TABS / VIEWS ============ */
+document.getElementById('viewTabs').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-view]');
+  if(!btn) return;
+  setView(btn.dataset.view);
+});
+function setView(v){
+  currentView = v;
+  document.querySelectorAll('#viewTabs button').forEach(b => b.classList.toggle('active', b.dataset.view===v));
+  document.querySelectorAll('.view').forEach(sec => sec.style.display = 'none');
+  document.getElementById('view-'+v).style.display = '';
+  refreshAll();
+}
+
+/* ============ MODAL HELPERS ============ */
+function openModal(id){ document.getElementById(id).classList.add('show'); }
+function closeModal(id){ document.getElementById(id).classList.remove('show'); }
+
+/* ============ MATERIAS: RENDER ============ */
+function renderMaterias(){
+  const rail = document.getElementById('subjectRail');
+  if(state.materias.length === 0){
+    rail.innerHTML = '<div class="empty-hint">Nenhuma matéria ainda.<br>Crie a primeira acima.</div>';
+    document.getElementById('subjectDetailWrap').innerHTML = '';
+    return;
+  }
+  if(!getMateria(selectedMateriaId)) selectedMateriaId = state.materias[0].id;
+
+  rail.innerHTML = state.materias.map(m => {
+    const done = m.status === 'concluida';
+    return `<div class="subject-tab ${m.id===selectedMateriaId?'active':''}" style="--tab-color:${m.cor}" onclick="selectMateria('${m.id}')">
+      ${m.foto ? `<img class="subj-avatar" src="${esc(imageSrc(m.foto))}" alt="" loading="lazy" onerror="this.style.display='none'">` : ''}
+      <div style="flex:1;">
+        <span class="name">${esc(m.nome)}</span>
+        ${m.tipo ? `<span class="tipo-tag">${esc(m.tipo)}</span>` : ''}
+      </div>
+      <span class="badge ${done?'done':''}">${done?'concluída':m.aulas.length+' aulas'}</span>
+    </div>`;
+  }).join('');
+
+  renderSubjectDetail();
+}
+function selectMateria(id){ selectedMateriaId = id; renderMaterias(); }
+
+function renderSubjectDetail(){
+  const wrap = document.getElementById('subjectDetailWrap');
+  const m = getMateria(selectedMateriaId);
+  if(!m){ wrap.innerHTML = ''; return; }
+  const done = m.status === 'concluida';
+  const provas = m.provas || [];
+  const atividades = collectMateriaAtividades(m);
+  wrap.innerHTML = `
+    <div class="subject-panel">
+      <div class="subject-head" style="--tab-color:${m.cor}">
+        <div class="stripe" style="background:${m.cor}"></div>
+        ${m.foto ? `<img class="subj-hero" src="${esc(imageSrc(m.foto))}" alt="" loading="lazy" onerror="this.style.display='none'">` : ''}
+        <h2>${esc(m.nome)}</h2>${m.tipo ? `<span class="tipo-badge">${esc(m.tipo)}</span>` : ''}
+        <div class="subject-meta">
+          <span><b>Instrutor:</b> ${esc(m.instrutor)||'—'}</span>
+          <span><b>Contato:</b> ${esc(m.contato)||'—'}</span>
+          ${m.planoEnsino ? `<span><b>Plano de ensino:</b> ${inlineThumbLink(m.planoEnsino,'abrir')}</span>` : ''}
+          ${m.linkCurso ? `<span><b>Link do curso:</b> ${asLink(m.linkCurso,'acessar')}</span>` : ''}
+          ${m.certificado ? `<span><b>Certificado:</b> ${inlineThumbLink(m.certificado,'abrir')}</span>` : ''}
+        </div>
+        ${m.observacoes ? `<div class="subject-meta" style="margin-top:6px;"><span>${esc(m.observacoes)}</span></div>` : ''}
+        <div class="subject-actions">
+          <span class="status-pill ${done?'concluida':'andamento'}">${done?'concluída':'em andamento'}</span>
+          ${done && m.dataConclusao ? `<span class="status-pill pendente">concluída em ${fmtDate(m.dataConclusao)}</span>` : ''}
+          <button class="btn secondary sm" onclick="openMateriaModal('${m.id}')">Editar matéria</button>
+        </div>
+      </div>
+
+      <div class="lessons-toolbar"><span class="count">Provas (${provas.length})</span></div>
+      <div class="subrows">
+        ${provas.length ? provas.map((p,i)=>provaRowHtml(m,p,i)).join('') : '<div class="empty-hint">Nenhuma prova cadastrada — adicione em "Editar matéria".</div>'}
+      </div>
+
+      <div class="lessons-toolbar"><span class="count">Atividades (${atividades.length})</span></div>
+      <div class="subrows">
+        ${atividades.length ? atividades.map(t=>atividadeRowHtml(m,t)).join('') : '<div class="empty-hint">Nenhuma atividade cadastrada nas aulas desta matéria.</div>'}
+      </div>
+
+      <div class="lessons-toolbar">
+        <span class="count">${m.aulas.length} aula(s) registrada(s)</span>
+        <button class="btn amber sm" onclick="openAulaModal('${m.id}')">+ Nova aula</button>
+      </div>
+      <div class="lessons-grid">
+        ${m.aulas.length ? m.aulas.slice().sort((a,b)=>(a.diaHora||'').localeCompare(b.diaHora||'')).map(a => renderLessonCard(m, a)).join('') : '<div class="empty-hint">Nenhuma aula registrada ainda.</div>'}
+      </div>
+    </div>
+  `;
+}
+
+function renderLessonCard(m, a){
+  const nMat = (a.materiais||[]).length;
+  const nAtiv = (a.atividades||[]).length;
+  const ref = {materiaId:m.id, aulaId:a.id};
+  const dataStr = JSON.stringify(ref).replace(/"/g,'&quot;');
+  return `<div class="index-card" style="--tab-color:${m.cor}" onclick="openAulaView('${m.id}','${a.id}')">
+    <button class="edit-pencil" onclick="event.stopPropagation(); openAulaModal('${m.id}','${a.id}')" title="Editar">✎</button>
+    <div class="top-row">
+      <button class="stat-btn ${statusClass(a.status)}" title="${statusLabel(a.status||'pendente')} — clique para avançar"
+        onclick="event.stopPropagation(); kCycle('aula', ${dataStr})">${statusMark(a.status)}</button>
+      <div class="lesson-date">${fmtDateTime(a.diaHora)}</div>
+    </div>
+    <div class="lesson-title">${esc(a.titulo)||'(sem título)'}</div>
+    <div class="lesson-instructor">${esc(a.instrutor)||esc(m.instrutor)||''}</div>
+    <div class="chips">
+      <span class="chip ${statusClass(a.status)==='concluida'?'done':statusClass(a.status)}">${statusLabel(a.status||'pendente')}</span>
+      ${nMat ? `<span class="chip">${nMat} material(is)</span>` : ''}
+      ${nAtiv ? `<span class="chip task">${nAtiv} atividade(s)</span>` : ''}
+    </div>
+  </div>`;
+}
+
+/* ============ MATERIA MODAL ============ */
+function toggleConclusaoField(){
+  document.getElementById('mDataConclusaoWrap').style.display = document.getElementById('mConcluida').checked ? '' : 'none';
+}
+function openMateriaModal(id){
+  editingMateriaId = id || null;
+  const m = id ? getMateria(id) : null;
+  document.getElementById('materiaModalTitle').textContent = m ? 'Editar matéria' : 'Nova matéria';
+  document.getElementById('mNome').value = m?.nome || '';
+  document.getElementById('mTipo').value = m?.tipo || '';
+  document.getElementById('mInstrutor').value = m?.instrutor || '';
+  document.getElementById('mContato').value = m?.contato || '';
+  document.getElementById('mPlano').value = m?.planoEnsino || '';
+  document.getElementById('mCurso').value = m?.linkCurso || '';
+  document.getElementById('mFoto').value = m?.foto || '';
+  updateFotoPreview();
+  document.getElementById('mCertificado').value = m?.certificado || '';
+  document.getElementById('mObs').value = m?.observacoes || '';
+  document.getElementById('mConcluida').checked = m?.status === 'concluida';
+  document.getElementById('mDataConclusao').value = m?.dataConclusao || '';
+  toggleConclusaoField();
+  document.getElementById('mDeleteBtn').style.display = m ? '' : 'none';
+
+  const colorRow = document.getElementById('mColorRow');
+  const selectedColor = m?.cor || COLORS[state.materias.length % COLORS.length];
+  colorRow.innerHTML = COLORS.map(c => `<div class="swatch ${c===selectedColor?'selected':''}" style="background:${c}" data-color="${c}" onclick="pickColor(this)"></div>`).join('');
+  colorRow.dataset.selected = selectedColor;
+
+  draftProvas = m?.provas ? JSON.parse(JSON.stringify(m.provas)) : [];
+  renderProvasList();
+
+  openModal('materiaOverlay');
+}
+function pickColor(el){
+  el.parentElement.querySelectorAll('.swatch').forEach(s => s.classList.remove('selected'));
+  el.classList.add('selected');
+  el.parentElement.dataset.selected = el.dataset.color;
+}
+function renderProvasList(){
+  const wrap = document.getElementById('provasItems');
+  wrap.innerHTML = draftProvas.length ? draftProvas.map((it,i) => `
+    <div class="sublist-item">
+      <input type="text" placeholder="prova" value="${esc(it.titulo)}" oninput="draftProvas[${i}].titulo=this.value">
+      <input type="date" value="${esc(it.data)}" oninput="draftProvas[${i}].data=this.value">
+      <select onchange="draftProvas[${i}].status=this.value">
+        <option value="pendente" ${it.status==='pendente'?'selected':''}>pendente</option>
+        <option value="revisar" ${it.status==='revisar'?'selected':''}>revisar</option>
+        <option value="concluido" ${it.status==='concluido'?'selected':''}>realizada</option>
+      </select>
+      <button class="btn icon sm secondary" onclick="draftProvas.splice(${i},1); renderProvasList();">✕</button>
+    </div>`).join('') : '<div class="sublist-empty">Nenhuma data de prova adicionada.</div>';
+}
+function addProvaItem(){ draftProvas.push({id:uid(), titulo:'', data:'', status:'pendente'}); renderProvasList(); }
+
+function saveMateria(){
+  const nome = document.getElementById('mNome').value.trim();
+  if(!nome){ alert('Dê um nome para a matéria.'); return; }
+  const payload = {
+    nome,
+    tipo: document.getElementById('mTipo').value.trim(),
+    instrutor: document.getElementById('mInstrutor').value.trim(),
+    contato: document.getElementById('mContato').value.trim(),
+    planoEnsino: document.getElementById('mPlano').value.trim(),
+    linkCurso: document.getElementById('mCurso').value.trim(),
+    foto: document.getElementById('mFoto').value.trim(),
+    certificado: document.getElementById('mCertificado').value.trim(),
+    observacoes: document.getElementById('mObs').value.trim(),
+    status: document.getElementById('mConcluida').checked ? 'concluida' : 'andamento',
+    dataConclusao: document.getElementById('mConcluida').checked ? document.getElementById('mDataConclusao').value : '',
+    cor: document.getElementById('mColorRow').dataset.selected || COLORS[0],
+    provas: draftProvas.filter(x=>x.titulo||x.data).map(x => ({id:x.id||uid(), titulo:x.titulo, data:x.data, status:x.status||'pendente'}))
+  };
+  if(editingMateriaId){
+    Object.assign(getMateria(editingMateriaId), payload);
+  }else{
+    const novo = { id: uid(), aulas: [], ...payload };
+    state.materias.push(novo);
+    selectedMateriaId = novo.id;
+  }
+  saveData();
+  closeModal('materiaOverlay');
+  refreshAll();
+}
+function deleteMateria(){
+  if(!editingMateriaId) return;
+  if(!confirm('Excluir esta matéria e todas as aulas registradas nela?')) return;
+  state.materias = state.materias.filter(m => m.id !== editingMateriaId);
+  if(selectedMateriaId === editingMateriaId) selectedMateriaId = state.materias[0]?.id || null;
+  saveData();
+  closeModal('materiaOverlay');
+  refreshAll();
+}
+
+/* ============ AULA VIEW (read-only) ============ */
+function openAulaView(materiaId, aulaId){
+  viewingAulaMateriaId = materiaId;
+  viewingAulaId = aulaId;
+  const m = getMateria(materiaId), a = getAula(materiaId, aulaId);
+  if(!a) return;
+  document.getElementById('aulaViewTitle').textContent = a.titulo || '(sem título)';
+  const materiais = a.materiais || [], atividades = a.atividades || [];
+  document.getElementById('aulaViewBody').innerHTML = `
+    <div class="view-block"><span class="vlabel">Status</span><span class="vvalue"><span class="status-pill ${statusClass(a.status)}">${statusLabel(a.status||'pendente')}</span></span></div>
+    <div class="view-grid">
+      <div class="view-block"><span class="vlabel">Dia / hora</span><span class="vvalue">${fmtDateTime(a.diaHora)}</span></div>
+      <div class="view-block"><span class="vlabel">Instrutor</span><span class="vvalue">${esc(a.instrutor)||esc(m.instrutor)||'—'}</span></div>
+      <div class="view-block"><span class="vlabel">Endereço / local</span><span class="vvalue">${esc(a.endereco)||'—'}</span></div>
+      <div class="view-block"><span class="vlabel">Link da aula</span><span class="vvalue">${a.link ? inlineThumbLink(a.link,'abrir aula') : '—'}</span></div>
+    </div>
+    <div class="view-block"><span class="vlabel">Conteúdo</span><span class="vvalue">${esc(a.conteudo)||'—'}</span></div>
+    <div class="view-block"><span class="vlabel">Observações</span><span class="vvalue">${esc(a.observacoes)||'—'}</span></div>
+    <div class="view-block">
+      <span class="vlabel">Materiais de estudo</span>
+      ${materiais.length ? `<div class="thumbs">${materiais.map(mt => thumbHtml(mt.link, mt.titulo || 'material')).join('')}</div>` : '<span class="vvalue">—</span>'}
+    </div>
+    <div class="view-block">
+      <span class="vlabel">Atividades</span>
+      ${atividades.length ? atividades.map(t => `<div class="view-list-item"><span>${esc(t.titulo)||'atividade'} · ${fmtDate(t.data)}</span><span class="status-pill ${statusClass(t.status)}">${statusLabel(t.status||'pendente')}</span></div>`).join('') : '<span class="vvalue">—</span>'}
+    </div>
+  `;
+  openModal('aulaViewOverlay');
+}
+function switchToAulaEdit(){
+  closeModal('aulaViewOverlay');
+  openAulaModal(viewingAulaMateriaId, viewingAulaId);
+}
+
+/* ============ AULA MODAL (edit) ============ */
+function toggleRecurFields(){
+  document.getElementById('recurFields').classList.toggle('show', document.getElementById('aRecorrente').checked);
+}
+function openAulaModal(materiaId, aulaId){
+  editingAulaMateriaId = materiaId;
+  editingAulaId = aulaId || null;
+  const a = aulaId ? getAula(materiaId, aulaId) : null;
+  document.getElementById('aulaModalTitle').textContent = a ? 'Editar aula' : 'Nova aula';
+  document.getElementById('aTitulo').value = a?.titulo || '';
+  document.getElementById('aDiaHora').value = a?.diaHora || '';
+  document.getElementById('aInstrutor').value = a?.instrutor || '';
+  document.getElementById('aEndereco').value = a?.endereco || '';
+  document.getElementById('aLink').value = a?.link || '';
+  document.getElementById('aConteudo').value = a?.conteudo || '';
+  document.getElementById('aObs').value = a?.observacoes || '';
+  document.getElementById('aStatus').value = a?.status || 'pendente';
+  document.getElementById('aDeleteBtn').style.display = a ? '' : 'none';
+
+  document.getElementById('aRecorrente').checked = false;
+  document.getElementById('aFrequencia').value = 'semanal';
+  document.getElementById('aRepetirAte').value = '';
+  toggleRecurFields();
+  document.getElementById('recurBox').style.display = a ? 'none' : ''; // recurrence only on creation
+
+  draftSub = {
+    materiais: a?.materiais ? JSON.parse(JSON.stringify(a.materiais)) : [],
+    atividades: a?.atividades ? JSON.parse(JSON.stringify(a.atividades)) : []
+  };
+  renderSubLists();
+  openModal('aulaOverlay');
+}
+
+function renderSubLists(){
+  const materiaisWrap = document.getElementById('materiaisItems');
+  materiaisWrap.innerHTML = draftSub.materiais.length ? draftSub.materiais.map((it,i) => `
+    <div class="sublist-item">
+      <input type="text" placeholder="título" value="${esc(it.titulo)}" oninput="updateSubField('materiais',${i},'titulo',this.value)">
+      <input type="url" placeholder="link" value="${esc(it.link)}" oninput="updateSubField('materiais',${i},'link',this.value)">
+      <button class="btn icon sm secondary" onclick="removeSubItem('materiais',${i})">✕</button>
+    </div>`).join('') : '<div class="sublist-empty">Nenhum material adicionado.</div>';
+
+  const ativWrap = document.getElementById('atividadesItems');
+  ativWrap.innerHTML = draftSub.atividades.length ? draftSub.atividades.map((it,i) => `
+    <div class="sublist-item">
+      <input type="text" placeholder="atividade" value="${esc(it.titulo)}" oninput="updateSubField('atividades',${i},'titulo',this.value)">
+      <input type="date" value="${esc(it.data)}" oninput="updateSubField('atividades',${i},'data',this.value)">
+      <select onchange="updateSubField('atividades',${i},'status',this.value)">
+        <option value="pendente" ${it.status==='pendente'?'selected':''}>pendente</option>
+        <option value="revisar" ${it.status==='revisar'?'selected':''}>revisar</option>
+        <option value="concluido" ${it.status==='concluido'?'selected':''}>concluída</option>
+      </select>
+      <button class="btn icon sm secondary" onclick="removeSubItem('atividades',${i})">✕</button>
+    </div>`).join('') : '<div class="sublist-empty">Nenhuma atividade adicionada.</div>';
+}
+function addSubItem(kind){
+  if(kind==='materiais') draftSub.materiais.push({titulo:'', link:''});
+  if(kind==='atividades') draftSub.atividades.push({titulo:'', data:'', status:'pendente'});
+  renderSubLists();
+}
+function updateSubField(kind, idx, field, value){ draftSub[kind][idx][field] = value; }
+function removeSubItem(kind, idx){ draftSub[kind].splice(idx,1); renderSubLists(); }
+
+function addDays(dateObj, n){ const d = new Date(dateObj); d.setDate(d.getDate()+n); return d; }
+function addMonths(dateObj, n){ const d = new Date(dateObj); d.setMonth(d.getMonth()+n); return d; }
+function toLocalInputValue(d){
+  const pad = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function saveAula(){
+  const titulo = document.getElementById('aTitulo').value.trim();
+  if(!titulo){ alert('Dê um título para a aula.'); return; }
+  const diaHora = document.getElementById('aDiaHora').value;
+  const basePayload = {
+    titulo,
+    instrutor: document.getElementById('aInstrutor').value.trim(),
+    endereco: document.getElementById('aEndereco').value.trim(),
+    link: document.getElementById('aLink').value.trim(),
+    conteudo: document.getElementById('aConteudo').value.trim(),
+    observacoes: document.getElementById('aObs').value.trim(),
+    status: document.getElementById('aStatus').value,
+    materiais: draftSub.materiais.filter(x=>x.titulo||x.link),
+    atividades: draftSub.atividades.filter(x=>x.titulo||x.data)
+  };
+  const m = getMateria(editingAulaMateriaId);
+
+  if(editingAulaId){
+    Object.assign(getAula(editingAulaMateriaId, editingAulaId), basePayload, {diaHora});
+  }else{
+    const isRecorrente = document.getElementById('aRecorrente').checked;
+    const repetirAte = document.getElementById('aRepetirAte').value;
+    if(isRecorrente && diaHora && repetirAte){
+      const freq = document.getElementById('aFrequencia').value;
+      const limit = new Date(repetirAte + 'T23:59:59');
+      let cursor = new Date(diaHora);
+      let count = 0;
+      const maxAulas = freq === 'diaria' ? 260 : 60;
+      while(cursor <= limit && count < maxAulas){
+        const dow = cursor.getDay();
+        const ehFimDeSemana = (dow === 0 || dow === 6);
+        if(!(freq === 'diaria' && ehFimDeSemana)){
+          m.aulas.push({ id: uid(), ...basePayload, diaHora: toLocalInputValue(cursor) });
+          count++;
+        }
+        if(freq === 'diaria') cursor = addDays(cursor, 1);
+        else if(freq === 'semanal') cursor = addDays(cursor, 7);
+        else if(freq === 'quinzenal') cursor = addDays(cursor, 14);
+        else cursor = addMonths(cursor, 1);
+      }
+    }else{
+      m.aulas.push({ id: uid(), ...basePayload, diaHora });
+    }
+  }
+  saveData();
+  closeModal('aulaOverlay');
+  refreshAll();
+}
+function deleteAula(){
+  if(!editingAulaId) return;
+  if(!confirm('Excluir esta aula?')) return;
+  const m = getMateria(editingAulaMateriaId);
+  m.aulas = m.aulas.filter(a => a.id !== editingAulaId);
+  saveData();
+  closeModal('aulaOverlay');
+  refreshAll();
+}
+
+/* ============ KANBAN ============ */
+function collectAllCards(){
+  const cards = [];
+  state.materias.forEach(m => {
+    (m.provas||[]).forEach((p,i) => {
+      cards.push({ type:'prova', label:'Prova', title:p.titulo||'(sem título)', sub:m.nome, date:p.data, status:p.status, color:m.cor,
+        ref:{materiaId:m.id, kind:'provas', idx:i} });
+    });
+    m.aulas.forEach(a => {
+      cards.push({ type:'aula', label:'Aula', title:a.titulo, sub:m.nome, date:a.diaHora, status:a.status, color:m.cor,
+        ref:{materiaId:m.id, aulaId:a.id} });
+      (a.atividades||[]).forEach((t,i) => {
+        cards.push({ type:'atividade', label:'Atividade', title:t.titulo||'(sem título)', sub:m.nome+' · '+a.titulo, date:t.data, status:t.status, color:m.cor,
+          ref:{materiaId:m.id, aulaId:a.id, kind:'atividades', idx:i} });
+      });
+    });
+  });
+  return cards;
+}
+/* ============ TAREFAS (atividades + provas) ============ */
+/* ---- linhas intrínsecas de provas/atividades, usadas dentro da própria matéria ---- */
+function collectMateriaAtividades(m){
+  const out = [];
+  m.aulas.forEach(a => {
+    (a.atividades||[]).forEach((t,idx) => {
+      out.push({ titulo:t.titulo, data:t.data, status:t.status, aulaId:a.id, aulaTitulo:a.titulo, idx });
+    });
+  });
+  return out.sort((x,y)=>(x.data||'').localeCompare(y.data||''));
+}
+function provaRowHtml(m, p, idx){
+  const todayKey = dateKeyOf(new Date());
+  const overdue = statusOf(p) !== 'concluido' && p.data && p.data < todayKey;
+  const ref = {materiaId:m.id, kind:'provas', idx};
+  const dataStr = JSON.stringify(ref).replace(/"/g,'&quot;');
+  return `<div class="task-row ${overdue?'overdue':''}" onclick="openMateriaModal('${m.id}')">
+    <button class="stat-btn ${statusClass(statusOf(p))}" title="${statusLabel(statusOf(p))} — clique para avançar"
+      onclick="event.stopPropagation(); kCycle('prova', ${dataStr})">${statusMark(statusOf(p))}</button>
+    <div style="flex:1;"><div class="ttitle">${esc(p.titulo)||'(sem título)'}</div></div>
+    <span class="tdate ${overdue?'overdue':''}">${p.data ? fmtDate(p.data) : '—'}</span>
+  </div>`;
+}
+function atividadeRowHtml(m, t){
+  const todayKey = dateKeyOf(new Date());
+  const overdue = statusOf(t) !== 'concluido' && t.data && t.data < todayKey;
+  const ref = {materiaId:m.id, aulaId:t.aulaId, kind:'atividades', idx:t.idx};
+  const dataStr = JSON.stringify(ref).replace(/"/g,'&quot;');
+  return `<div class="task-row ${overdue?'overdue':''}" onclick="openAulaView('${m.id}','${t.aulaId}')">
+    <button class="stat-btn ${statusClass(statusOf(t))}" title="${statusLabel(statusOf(t))} — clique para avançar"
+      onclick="event.stopPropagation(); kCycle('atividade', ${dataStr})">${statusMark(statusOf(t))}</button>
+    <div style="flex:1;">
+      <div class="ttitle">${esc(t.titulo)||'(sem título)'}</div>
+      <div class="tsub">${esc(t.aulaTitulo)}</div>
+    </div>
+    <span class="tdate ${overdue?'overdue':''}">${t.data ? fmtDate(t.data) : '—'}</span>
+  </div>`;
+}
+
+/* ============ RESUMO (gestão à vista) ============ */
+function nextProva(m){
+  const list = (m.provas||[]).filter(p => statusOf(p) !== 'concluido' && p.data).sort((a,b)=>a.data.localeCompare(b.data));
+  return list[0] || null;
+}
+function nextAula(m){
+  const list = m.aulas.filter(a => a.status !== 'concluido' && a.diaHora).sort((a,b)=>a.diaHora.localeCompare(b.diaHora));
+  return list[0] || null;
+}
+function jumpToMateria(id){
+  selectedMateriaId = id;
+  setView('materias');
+}
+function renderResumo(){
+  const grid = document.getElementById('resumoGrid');
+  if(!state.materias.length){ grid.innerHTML = '<div class="empty-hint">Nenhuma matéria cadastrada ainda.</div>'; return; }
+  const todayKey = dateKeyOf(new Date());
+
+  const enriched = state.materias.map(m => {
+    const np = nextProva(m);
+    const na = nextAula(m);
+    const pendAtiv = collectMateriaAtividades(m).filter(t => statusOf(t) !== 'concluido').length;
+    const pendProvas = (m.provas||[]).filter(p => statusOf(p) !== 'concluido').length;
+    let urgency = '';
+    if(np){
+      const days = Math.ceil((new Date(np.data+'T00:00:00') - new Date(todayKey+'T00:00:00')) / 86400000);
+      urgency = days <= 3 ? 'urgent' : days <= 7 ? 'soon' : '';
+    }
+    return { m, np, na, pendAtiv, pendProvas, urgency };
+  });
+
+  enriched.sort((x,y) => {
+    const doneX = x.m.status === 'concluida', doneY = y.m.status === 'concluida';
+    if(doneX !== doneY) return doneX ? 1 : -1;
+    const dx = x.np ? x.np.data : '9999-99-99';
+    const dy = y.np ? y.np.data : '9999-99-99';
+    if(dx !== dy) return dx.localeCompare(dy);
+    return x.m.nome.localeCompare(y.m.nome);
+  });
+
+  grid.innerHTML = enriched.map(({m,np,na,pendAtiv,pendProvas,urgency}) => {
+    const done = m.status === 'concluida';
+    const avatar = m.foto
+      ? `<img class="subj-avatar" src="${esc(imageSrc(m.foto))}" alt="" loading="lazy" onerror="this.style.display='none'">`
+      : `<span class="resumo-dot" style="background:${m.cor}"></span>`;
+    return `<div class="resumo-card ${done?'':urgency}" style="--tab-color:${m.cor}" onclick="jumpToMateria('${m.id}')">
+      <div class="resumo-card-head">
+        ${avatar}
+        <div style="flex:1; min-width:0;">
+          <div class="resumo-name">${esc(m.nome)}</div>
+          ${m.tipo ? `<div class="resumo-tipo">${esc(m.tipo)}</div>` : ''}
+        </div>
+        <span class="status-pill ${done?'concluida':'andamento'}">${done?'concluída':'ativa'}</span>
+      </div>
+      <div class="resumo-body">
+        <div class="resumo-row"><span class="resumo-label">Próxima prova</span><span class="resumo-value ${done?'':urgency}">${np ? esc(np.titulo||'prova')+' · '+fmtDate(np.data) : '—'}</span></div>
+        <div class="resumo-row"><span class="resumo-label">Próxima aula</span><span class="resumo-value">${na ? fmtDateTime(na.diaHora) : '—'}</span></div>
+      </div>
+      <div class="resumo-counts">
+        ${pendProvas ? `<span class="chip exam">${pendProvas} prova(s)</span>` : ''}
+        ${pendAtiv ? `<span class="chip task">${pendAtiv} atividade(s)</span>` : ''}
+        ${!pendProvas && !pendAtiv ? '<span class="chip done">em dia</span>' : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+function statusOf(card){
+  return card.status === 'concluido' ? 'concluido' : card.status === 'revisar' ? 'revisar' : 'pendente';
+}
+let kanbanFilter = 'todas';
+function setKanbanFilter(f){
+  kanbanFilter = f;
+  document.querySelectorAll('#kanbanFilters .chipfilter').forEach(b => b.classList.toggle('active', b.dataset.kf===f));
+  renderKanban();
+}
+function renderKanban(){
+  const board = document.getElementById('kanbanBoard');
+  let cards = collectAllCards();
+  if(kanbanFilter !== 'todas') cards = cards.filter(c => c.type === kanbanFilter);
+  const cols = [
+    {key:'pendente', label:'Pendente'},
+    {key:'revisar', label:'Revisar'},
+    {key:'concluido', label:'Concluído'}
+  ];
+  board.innerHTML = cols.map(col => {
+    const colCards = cards.filter(c => statusOf(c) === col.key)
+      .sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+    return `<div class="kcol" data-col="${col.key}" ondragover="kOver(event)" ondragleave="kLeave(event)" ondrop="kDrop(event,'${col.key}')">
+      <div class="kcol-head"><h4>${col.label}</h4><span class="n">${colCards.length}</span></div>
+      <div class="kcol-body">
+        ${colCards.map((c) => kCardHtml(c)).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+function kCardHtml(c){
+  const ref = c.ref;
+  const dataStr = JSON.stringify(ref).replace(/"/g,'&quot;');
+  const st = statusOf(c);
+  return `<div class="kcard" style="--kcolor:${c.color}" draggable="true"
+      ondragstart="kStart(event)" data-ref='${dataStr}' data-type="${c.type}"
+      onclick="kCardClick('${c.type}', ${dataStr})">
+    <div style="display:flex; align-items:flex-start; gap:8px;">
+      <button class="stat-btn ${statusClass(st)}" style="margin-top:2px;" title="${statusLabel(st)} — clique para avançar"
+        onclick="event.stopPropagation(); kCycle('${c.type}', ${dataStr})">${statusMark(st)}</button>
+      <div style="flex:1;">
+        <div class="ktype">${c.label}</div>
+        <div class="ktitle">${esc(c.title)}</div>
+        <div class="kmeta">${esc(c.sub)}${c.date ? ' · '+ (c.type==='aula'?fmtDateTime(c.date):fmtDate(c.date)) : ''}</div>
+      </div>
+    </div>
+  </div>`;
+}
+function setItemStatus(type, ref, newStatus){
+  if(type === 'aula'){
+    const a = getAula(ref.materiaId, ref.aulaId);
+    if(a) a.status = newStatus;
+  }else if(type === 'atividade'){
+    const a = getAula(ref.materiaId, ref.aulaId);
+    if(a && a.atividades && a.atividades[ref.idx]) a.atividades[ref.idx].status = newStatus;
+  }else if(type === 'prova'){
+    const m = getMateria(ref.materiaId);
+    if(m && m.provas && m.provas[ref.idx]) m.provas[ref.idx].status = newStatus;
+  }
+  saveData();
+}
+function getItemStatus(type, ref){
+  if(type === 'aula') return getAula(ref.materiaId, ref.aulaId)?.status || 'pendente';
+  if(type === 'atividade') return getAula(ref.materiaId, ref.aulaId)?.atividades?.[ref.idx]?.status || 'pendente';
+  if(type === 'prova') return getMateria(ref.materiaId)?.provas?.[ref.idx]?.status || 'pendente';
+  return 'pendente';
+}
+function kCycle(type, ref){
+  setItemStatus(type, ref, nextStatus(getItemStatus(type, ref)));
+  refreshAll();
+}
+let dragRef = null, dragType = null;
+function kStart(e){
+  dragRef = JSON.parse(e.target.dataset.ref);
+  dragType = e.target.dataset.type;
+  e.dataTransfer.effectAllowed = 'move';
+}
+function kOver(e){ e.preventDefault(); e.currentTarget.classList.add('dragover'); }
+function kLeave(e){ e.currentTarget.classList.remove('dragover'); }
+function kDrop(e, newStatus){
+  e.preventDefault();
+  e.currentTarget.classList.remove('dragover');
+  if(!dragRef) return;
+  setItemStatus(dragType, dragRef, newStatus);
+  renderKanban();
+  dragRef = null; dragType = null;
+}
+function kCardClick(type, ref){
+  if(type === 'aula'){ openAulaView(ref.materiaId, ref.aulaId); }
+  else if(type === 'atividade'){ openAulaView(ref.materiaId, ref.aulaId); }
+  else if(type === 'prova'){ openMateriaModal(ref.materiaId); }
+}
+
+/* ============ CALENDAR ============ */
+function setCalMode(mode){
+  calMode = mode;
+  document.querySelectorAll('.cal-modes button').forEach(b => b.classList.toggle('active', b.dataset.mode===mode));
+  renderCalendar();
+}
+function calShift(delta){
+  if(calMode==='semana') calCursor = addDays(calCursor, delta*7);
+  else if(calMode==='mes') calCursor = addMonths(calCursor, delta);
+  else calCursor = addMonths(calCursor, delta*6);
+  renderCalendar();
+}
+function calToday(){ calCursor = new Date(); calCursor.setHours(0,0,0,0); renderCalendar(); }
+
+function eventsForDate(dateKey){
+  const evs = [];
+  state.materias.forEach(m => {
+    (m.provas||[]).forEach(p => {
+      if(p.data === dateKey) evs.push({type:'prova', label:'Prova', title:p.titulo, sub:m.nome, color:m.cor, materiaId:m.id, kind:'provas'});
+    });
+    m.aulas.forEach(a => {
+      if(a.diaHora && a.diaHora.slice(0,10) === dateKey){
+        evs.push({type:'aula', label:'Aula', title:a.titulo, sub:m.nome, color:m.cor, time:a.diaHora.slice(11,16), materiaId:m.id, aulaId:a.id});
+      }
+      (a.atividades||[]).forEach(t => {
+        if(t.data === dateKey) evs.push({type:'atividade', label:'Atividade', title:t.titulo, sub:m.nome+' · '+a.titulo, color:m.cor, materiaId:m.id, aulaId:a.id});
+      });
+    });
+  });
+  return evs.sort((a,b)=>(a.time||'').localeCompare(b.time||''));
+}
+function dateKeyOf(d){ return d.toISOString().slice(0,10); }
+
+function renderCalendar(){
+  document.getElementById('calMonthLabel').textContent =
+    calMode==='semana' ? weekLabel(calCursor) :
+    calMode==='mes' ? calCursor.toLocaleDateString('pt-BR',{month:'long', year:'numeric'}) :
+    semesterLabel(calCursor);
+  const body = document.getElementById('calBody');
+  if(calMode==='semana') body.innerHTML = renderWeekHtml();
+  else if(calMode==='mes') body.innerHTML = renderMonthHtml(calCursor);
+  else body.innerHTML = renderSemesterHtml();
+}
+
+function weekLabel(anchor){
+  const start = addDays(anchor, -anchor.getDay());
+  const end = addDays(start, 6);
+  return `${start.getDate()}/${start.getMonth()+1} – ${end.getDate()}/${end.getMonth()+1}`;
+}
+function renderWeekHtml(){
+  const start = addDays(calCursor, -calCursor.getDay());
+  const todayKey = dateKeyOf(new Date());
+  const dows = ['dom','seg','ter','qua','qui','sex','sáb'];
+  let html = '<div class="week-grid">';
+  for(let i=0;i<7;i++){
+    const d = addDays(start, i);
+    const key = dateKeyOf(d);
+    const evs = eventsForDate(key);
+    html += `<div class="week-day ${key===todayKey?'today':''}">
+      <div class="week-day-head">${dows[i]} · ${d.getDate()}/${d.getMonth()+1}</div>
+      ${evs.length ? evs.map(e => `<div class="week-event" style="--kcolor:${e.color}" onclick="weekEventClick(${JSON.stringify(e).replace(/"/g,'&quot;')})">
+          ${e.time ? `<span class="wtime">${e.time}</span> `:''}<b>${esc(e.label)}</b>: ${esc(e.title)||''}<br><span style="color:var(--ink-soft)">${esc(e.sub)}</span>
+        </div>`).join('') : '<div class="sublist-empty">Nada neste dia.</div>'}
+    </div>`;
+  }
+  html += '</div>';
+  return html;
+}
+function weekEventClick(e){
+  if(e.type==='aula' || e.type==='atividade') openAulaView(e.materiaId, e.aulaId);
+  else if(e.type==='prova') openMateriaModal(e.materiaId);
+}
+
+function renderMonthHtml(anchor){
+  const year = anchor.getFullYear(), month = anchor.getMonth();
+  const dows = ['dom','seg','ter','qua','qui','sex','sáb'];
+  let html = dows.map(d => `<div class="cal-dow">${d}</div>`).join('');
+  const firstDay = new Date(year, month, 1);
+  const startOffset = firstDay.getDay();
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+  const daysInPrevMonth = new Date(year, month, 0).getDate();
+  const todayKey = dateKeyOf(new Date());
+  const cells = [];
+  for(let i=startOffset-1; i>=0; i--) cells.push({day: daysInPrevMonth-i, other:true, month: month-1});
+  for(let d=1; d<=daysInMonth; d++) cells.push({day:d, other:false, month});
+  while(cells.length % 7 !== 0) cells.push({day: cells.length - (startOffset+daysInMonth) + 1, other:true, month: month+1});
+
+  cells.forEach(c => {
+    const dObj = new Date(year, c.month, c.day);
+    const dateKey = dateKeyOf(dObj);
+    const evs = eventsForDate(dateKey);
+    const isToday = dateKey === todayKey;
+    const dotTypes = {};
+    evs.forEach(e => dotTypes[e.type] = true);
+    html += `<div class="cal-day ${c.other?'othermonth':''} ${isToday?'today':''}" onclick="openDayModal('${dateKey}')">
+      <span class="cal-daynum">${c.day}</span>
+      <div class="cal-dot-row">
+        ${dotTypes.aula ? '<span class="cal-dot"></span>' : ''}
+        ${dotTypes.atividade ? '<span class="cal-dot task"></span>' : ''}
+        ${dotTypes.prova ? '<span class="cal-dot exam"></span>' : ''}
+      </div>
+      ${evs.slice(0,2).map(e => `<div class="cal-event-line">${esc(e.title||e.label)}</div>`).join('')}
+      ${evs.length>2 ? `<div class="cal-event-line">+${evs.length-2} mais</div>` : ''}
+    </div>`;
+  });
+  return `<div class="cal-grid">${html}</div>`;
+}
+
+function semesterLabel(anchor){
+  const start = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
+  const end = addMonths(start, 5);
+  return `${start.toLocaleDateString('pt-BR',{month:'short'})}/${start.getFullYear()} – ${end.toLocaleDateString('pt-BR',{month:'short'})}/${end.getFullYear()}`;
+}
+function renderSemesterHtml(){
+  const start = new Date(calCursor.getFullYear(), calCursor.getMonth(), 1);
+  let html = '<div class="semester-grid">';
+  for(let i=0;i<6;i++){
+    const monthDate = addMonths(start, i);
+    html += renderMiniMonth(monthDate);
+  }
+  html += '</div>';
+  return html;
+}
+function renderMiniMonth(monthDate){
+  const year = monthDate.getFullYear(), month = monthDate.getMonth();
+  const firstDay = new Date(year, month, 1);
+  const startOffset = firstDay.getDay();
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+  let counts = {aula:0, atividade:0, prova:0};
+  let cellsHtml = '';
+  for(let i=0;i<startOffset;i++) cellsHtml += '<div class="mini-cell other"></div>';
+  for(let d=1; d<=daysInMonth; d++){
+    const key = dateKeyOf(new Date(year, month, d));
+    const evs = eventsForDate(key);
+    evs.forEach(e => counts[e.type]++);
+    let cls = 'mini-cell';
+    if(evs.some(e=>e.type==='prova')) cls += ' has-exam';
+    else if(evs.some(e=>e.type==='atividade')) cls += ' has-task';
+    else if(evs.some(e=>e.type==='aula')) cls += ' has-aula';
+    cellsHtml += `<div class="${cls}" title="${d}"></div>`;
+  }
+  const monthLabel = monthDate.toLocaleDateString('pt-BR',{month:'long', year:'numeric'});
+  return `<div class="mini-month" onclick="jumpToMonth(${year},${month})">
+    <h5>${monthLabel}</h5>
+    <div class="mini-grid">${cellsHtml}</div>
+    <div class="mini-summary">${counts.aula} aula(s) · ${counts.atividade} ativ. · ${counts.prova} prova(s)</div>
+  </div>`;
+}
+function jumpToMonth(year, month){
+  calCursor = new Date(year, month, 1);
+  setCalMode('mes');
+}
+
+function openDayModal(dateKey){
+  const evs = eventsForDate(dateKey);
+  document.getElementById('dayModalTitle').textContent = fmtDate(dateKey);
+  const list = document.getElementById('dayEventList');
+  list.innerHTML = evs.length ? evs.map(e => `
+    <div class="day-event" style="--kcolor:${e.color}" onclick='dayEventClick(${JSON.stringify(e).replace(/"/g,"&quot;")})'>
+      <div class="etype">${e.label}${e.time ? ' · '+e.time : ''}</div>
+      <div class="etitle">${esc(e.title||'(sem título)')}</div>
+      <div class="esub">${esc(e.sub)}</div>
+    </div>`).join('') : '<div class="empty-hint">Nada registrado neste dia.</div>';
+  openModal('dayOverlay');
+}
+function dayEventClick(e){
+  closeModal('dayOverlay');
+  if(e.type==='aula' || e.type==='atividade') openAulaView(e.materiaId, e.aulaId);
+  else if(e.type==='prova') openMateriaModal(e.materiaId);
+}
+
+/* ============ INIT ============ */
+renderMaterias();
+
+if(sb){
+  pullRemote();
+  // ao voltar para a aba/app, busca o que outro aparelho gravou
+  document.addEventListener('visibilitychange', () => {
+    if(document.visibilityState === 'visible' && !syncTimer) pullRemote();
+  });
+  window.addEventListener('online', pullRemote);
+}else{
+  setSyncStatus('err','sem conexão com a nuvem — dados locais');
+}
+</script>
+</body>
+</html>
